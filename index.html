@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ball Dodge</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  background:#020617;
+  color:white;
+  font-family:system-ui;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.game{
+  width:360px;
+  height:640px;
+  background:linear-gradient(#020617,#020617);
+  border-radius:20px;
+  position:relative;
+  overflow:hidden;
+}
+
+.player{
+  width:40px;
+  height:40px;
+  background:#38bdf8;
+  border-radius:10px;
+  position:absolute;
+  bottom:80px;
+  left:160px;
+}
+
+.ball{
+  width:30px;
+  height:30px;
+  background:#ef4444;
+  border-radius:50%;
+  position:absolute;
+  top:-40px;
+}
+
+.controls{
+  position:absolute;
+  bottom:0;
+  width:100%;
+  display:flex;
+  justify-content:space-around;
+  padding:10px;
+}
+
+button{
+  width:70px;
+  height:50px;
+  border:none;
+  border-radius:12px;
+  background:#334155;
+  color:white;
+  font-size:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="game" id="game">
+  <div class="player" id="player"></div>
+
+  <div class="controls">
+    <button id="left">⬅️</button>
+    <button id="jump">⬆️</button>
+    <button id="right">➡️</button>
+  </div>
+</div>
+
+<script>
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+
+let x = 160;
+let y = 0;
+let jumping = false;
+let velocity = 0;
+let gravity = 1.5;
+
+function updatePlayer(){
+  player.style.left = x + "px";
+  player.style.bottom = (80 + y) + "px";
+}
+
+document.getElementById("left").ontouchstart = () => {
+  x = Math.max(0, x - 30);
+  updatePlayer();
+};
+
+document.getElementById("right").ontouchstart = () => {
+  x = Math.min(320, x + 30);
+  updatePlayer();
+};
+
+document.getElementById("jump").ontouchstart = () => {
+  if(!jumping){
+    velocity = 22;
+    jumping = true;
+  }
+};
+
+function spawnBall(){
+  const ball = document.createElement("div");
+  ball.className = "ball";
+  ball.style.left = Math.random()*330 + "px";
+  game.appendChild(ball);
+
+  let y = -40;
+  const fall = setInterval(()=>{
+    y += 6;
+    ball.style.top = y + "px";
+
+    const px = player.offsetLeft;
+    const py = player.offsetTop;
+
+    if(
+      y > py-30 &&
+      y < py+40 &&
+      Math.abs(px - ball.offsetLeft) < 30
+    ){
+      alert("💥 Game Over");
+      location.reload();
+    }
+
+    if(y > 640){
+      clearInterval(fall);
+      ball.remove();
+    }
+  },30);
+}
+
+setInterval(spawnBall, 900);
+
+function physics(){
+  if(jumping){
+    y += velocity;
+    velocity -= gravity;
+    if(y <= 0){
+      y = 0;
+      jumping = false;
+    }
+    updatePlayer();
+  }
+  requestAnimationFrame(physics);
+}
+
+physics();
+</script>
+
+</body>
+</html>
