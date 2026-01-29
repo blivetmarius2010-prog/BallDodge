@@ -3,46 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pixel Dodge</title>
+<title>Retro Dodge</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-
 body{
-  background:#000;
-  font-family:monospace;
+  background:#111;
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
+  font-family:monospace;
 }
 
-.container{
+.console{
+  background:#0e7490;
+  padding:20px;
+  border-radius:20px;
   width:360px;
 }
 
 .screen{
-  width:100%;
-  height:420px;
-  background:#111;
-  border:6px solid #444;
-  image-rendering:pixelated;
+  background:#1e3a8a;
+  height:240px;
+  border:6px solid #000;
   position:relative;
   overflow:hidden;
+  image-rendering:pixelated;
 }
 
 .player{
-  width:20px;
-  height:20px;
-  background:#4ade80;
-  position:absolute;
-  bottom:40px;
-  left:170px;
-}
-
-.ball{
   width:16px;
   height:16px;
+  background:#22c55e;
+  position:absolute;
+  bottom:20px;
+  left:112px;
+}
+
+.enemy{
+  width:14px;
+  height:14px;
   background:#ef4444;
   position:absolute;
 }
@@ -50,7 +51,7 @@ body{
 .gameover{
   position:absolute;
   inset:0;
-  background:rgba(0,0,0,.9);
+  background:rgba(0,0,0,.85);
   display:none;
   justify-content:center;
   align-items:center;
@@ -58,140 +59,145 @@ body{
   color:white;
 }
 
-.gameover button{
-  margin-top:12px;
-  padding:8px 16px;
-  font-size:16px;
-}
-
 .controls{
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:10px;
-  margin-top:10px;
+  margin-top:14px;
+  display:flex;
+  justify-content:space-between;
 }
 
-button{
-  height:60px;
-  font-size:22px;
+.dpad{
+  display:grid;
+  grid-template-columns:40px 40px 40px;
+  grid-template-rows:40px 40px 40px;
+  gap:4px;
+}
+
+.btn{
   background:#222;
   color:white;
-  border:4px solid #444;
+  border-radius:8px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:18px;
+  user-select:none;
+}
+
+.action{
+  width:50px;
+  height:50px;
+  background:#333;
+  border-radius:50%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:18px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="console">
   <div class="screen" id="screen">
     <div class="player" id="player"></div>
 
     <div class="gameover" id="gameover">
-      <div>💀 GAME OVER</div>
+      <div>GAME OVER</div>
       <button onclick="restart()">REJOUER</button>
     </div>
   </div>
 
   <div class="controls">
-    <button id="left">⬅️</button>
-    <button id="jump">⬆️</button>
-    <button id="right">➡️</button>
+    <div class="dpad">
+      <div></div>
+      <div class="btn" id="up">⬆️</div>
+      <div></div>
+      <div class="btn" id="left">⬅️</div>
+      <div></div>
+      <div class="btn" id="right">➡️</div>
+      <div></div><div></div><div></div>
+    </div>
+
+    <div class="action" id="jump">A</div>
   </div>
 </div>
 
 <script>
-const screen = document.getElementById("screen");
-const player = document.getElementById("player");
-const gameover = document.getElementById("gameover");
+const player=document.getElementById("player");
+const screen=document.getElementById("screen");
+const gameover=document.getElementById("gameover");
 
-let px, py, vy, jumping;
-let balls = [];
-let running = true;
+let x=112,y=0,vy=0,jump=false,run=true;
+let enemies=[];
 
-function init(){
-  px = 170;
-  py = 0;
-  vy = 0;
-  jumping = false;
-  balls.forEach(b=>b.remove());
-  balls = [];
-  running = true;
-  gameover.style.display = "none";
-  updatePlayer();
+function update(){
+  player.style.left=x+"px";
+  player.style.bottom=(20+y)+"px";
 }
 
-function updatePlayer(){
-  player.style.left = px+"px";
-  player.style.bottom = (40+py)+"px";
+function spawn(){
+  if(!run)return;
+  const e=document.createElement("div");
+  e.className="enemy";
+  e.style.left=Math.random()*210+"px";
+  e.style.top="-20px";
+  screen.appendChild(e);
+  enemies.push(e);
 }
 
-document.getElementById("left").ontouchstart = ()=>{ if(running) px=Math.max(0,px-20) };
-document.getElementById("right").ontouchstart = ()=>{ if(running) px=Math.min(340,px+20) };
-document.getElementById("jump").ontouchstart = ()=>{
-  if(!jumping && running){
-    vy = 16;
-    jumping = true;
-  }
-};
-
-function spawnBall(){
-  if(!running) return;
-  const b=document.createElement("div");
-  b.className="ball";
-  b.style.left=Math.random()*344+"px";
-  b.style.top="-20px";
-  screen.appendChild(b);
-  balls.push(b);
-}
-
-setInterval(spawnBall, 800);
+setInterval(spawn,900);
 
 function loop(){
-  if(running){
-    // gravity
-    if(jumping){
-      py+=vy;
-      vy-=1;
-      if(py<=0){py=0;jumping=false}
-      updatePlayer();
+  if(run){
+    if(jump){
+      y+=vy; vy-=1;
+      if(y<=0){y=0;jump=false}
+      update();
     }
 
-    balls.forEach((b,i)=>{
-      let y = b.offsetTop+5;
-      b.style.top=y+"px";
-
+    enemies.forEach((e,i)=>{
+      e.style.top=e.offsetTop+4+"px";
       if(
-        y > player.offsetTop-16 &&
-        y < player.offsetTop+20 &&
-        Math.abs(b.offsetLeft-px)<16
-      ){
-        endGame();
-      }
-
-      if(y>420){
-        b.remove();
-        balls.splice(i,1);
-      }
+        e.offsetTop>200-y &&
+        Math.abs(e.offsetLeft-x)<14
+      ) end();
+      if(e.offsetTop>260){e.remove();enemies.splice(i,1)}
     });
   }
   requestAnimationFrame(loop);
 }
 
-function endGame(){
-  running=false;
+function end(){
+  run=false;
   gameover.style.display="flex";
 }
 
 function restart(){
-  init();
+  enemies.forEach(e=>e.remove());
+  enemies=[];
+  x=112;y=0;run=true;
+  gameover.style.display="none";
+  update();
 }
 
-init();
+document.getElementById("left").ontouchstart=()=>x=Math.max(0,x-16);
+document.getElementById("right").ontouchstart=()=>x=Math.min(224,x+16);
+document.getElementById("jump").ontouchstart=()=>{if(!jump){vy=14;jump=true}};
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft")x=Math.max(0,x-16);
+  if(e.key==="ArrowRight")x=Math.min(224,x+16);
+  if(e.key==="ArrowUp"&&!jump){vy=14;jump=true}
+});
+
+update();
 loop();
 </script>
 
 </body>
 </html>
+
+
 
 
