@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Retro Dodge</title>
+<title>Retro Bounce</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -18,8 +18,8 @@ body{
 
 .console{
   background:#0e7490;
-  padding:20px;
-  border-radius:20px;
+  padding:18px;
+  border-radius:22px;
   width:360px;
 }
 
@@ -33,18 +33,19 @@ body{
 }
 
 .player{
-  width:16px;
-  height:16px;
+  width:18px;
+  height:18px;
   background:#22c55e;
   position:absolute;
-  bottom:20px;
-  left:112px;
+  bottom:10px;
+  left:160px;
 }
 
-.enemy{
-  width:14px;
-  height:14px;
+.ball{
+  width:22px;
+  height:22px;
   background:#ef4444;
+  border-radius:50%;
   position:absolute;
 }
 
@@ -65,33 +66,22 @@ body{
   justify-content:space-between;
 }
 
-.dpad{
-  display:grid;
-  grid-template-columns:40px 40px 40px;
-  grid-template-rows:40px 40px 40px;
-  gap:4px;
-}
-
 .btn{
+  width:50px;
+  height:50px;
   background:#222;
   color:white;
-  border-radius:8px;
+  border-radius:10px;
   display:flex;
   justify-content:center;
   align-items:center;
-  font-size:18px;
+  font-size:20px;
   user-select:none;
 }
 
 .action{
-  width:50px;
-  height:50px;
   background:#333;
   border-radius:50%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:18px;
 }
 </style>
 </head>
@@ -109,94 +99,95 @@ body{
   </div>
 
   <div class="controls">
-    <div class="dpad">
-      <div></div>
-      <div class="btn" id="up">⬆️</div>
-      <div></div>
-      <div class="btn" id="left">⬅️</div>
-      <div></div>
-      <div class="btn" id="right">➡️</div>
-      <div></div><div></div><div></div>
-    </div>
-
-    <div class="action" id="jump">A</div>
+    <div class="btn" id="left">⬅️</div>
+    <div class="btn action" id="jump">⬆️</div>
+    <div class="btn" id="right">➡️</div>
   </div>
 </div>
 
 <script>
-const player=document.getElementById("player");
 const screen=document.getElementById("screen");
+const player=document.getElementById("player");
 const gameover=document.getElementById("gameover");
 
-let x=112,y=0,vy=0,jump=false,run=true;
-let enemies=[];
+let px=160, py=0, vy=0;
+let balls=[];
+let running=true;
 
-function update(){
-  player.style.left=x+"px";
-  player.style.bottom=(20+y)+"px";
+function spawnBall(){
+  const b=document.createElement("div");
+  b.className="ball";
+  b.x=Math.random()*300;
+  b.y=200;
+  b.vx=Math.random()<0.5?-2:2;
+  screen.appendChild(b);
+  balls.push(b);
 }
 
-function spawn(){
-  if(!run)return;
-  const e=document.createElement("div");
-  e.className="enemy";
-  e.style.left=Math.random()*210+"px";
-  e.style.top="-20px";
-  screen.appendChild(e);
-  enemies.push(e);
-}
-
-setInterval(spawn,900);
+setInterval(()=>{ if(running) spawnBall(); },1500);
 
 function loop(){
-  if(run){
-    if(jump){
-      y+=vy; vy-=1;
-      if(y<=0){y=0;jump=false}
-      update();
+  if(running){
+    // gravité joueur
+    if(py>0 || vy>0){
+      py+=vy;
+      vy-=1;
+      if(py<=0){py=0;vy=0}
+      player.style.bottom=(10+py)+"px";
     }
 
-    enemies.forEach((e,i)=>{
-      e.style.top=e.offsetTop+4+"px";
+    balls.forEach((b,i)=>{
+      b.x+=b.vx;
+      if(b.x<=0 || b.x>=318) b.vx*=-1;
+      b.style.left=b.x+"px";
+
+      // collision
       if(
-        e.offsetTop>200-y &&
-        Math.abs(e.offsetLeft-x)<14
-      ) end();
-      if(e.offsetTop>260){e.remove();enemies.splice(i,1)}
+        Math.abs(b.x-px)<18 &&
+        py<12
+      ){
+        end();
+      }
     });
   }
   requestAnimationFrame(loop);
 }
 
 function end(){
-  run=false;
+  running=false;
   gameover.style.display="flex";
 }
 
 function restart(){
-  enemies.forEach(e=>e.remove());
-  enemies=[];
-  x=112;y=0;run=true;
+  balls.forEach(b=>b.remove());
+  balls=[];
+  px=160;py=0;vy=0;
+  player.style.left=px+"px";
+  running=true;
   gameover.style.display="none";
-  update();
 }
 
-document.getElementById("left").ontouchstart=()=>x=Math.max(0,x-16);
-document.getElementById("right").ontouchstart=()=>x=Math.min(224,x+16);
-document.getElementById("jump").ontouchstart=()=>{if(!jump){vy=14;jump=true}};
+function left(){ px=Math.max(0,px-12); player.style.left=px+"px"; }
+function right(){ px=Math.min(318,px+12); player.style.left=px+"px"; }
+function jump(){ vy=14; }
+
+document.getElementById("left").ontouchstart=left;
+document.getElementById("right").ontouchstart=right;
+document.getElementById("jump").ontouchstart=jump;
 
 document.addEventListener("keydown",e=>{
-  if(e.key==="ArrowLeft")x=Math.max(0,x-16);
-  if(e.key==="ArrowRight")x=Math.min(224,x+16);
-  if(e.key==="ArrowUp"&&!jump){vy=14;jump=true}
+  if(e.key==="ArrowLeft") left();
+  if(e.key==="ArrowRight") right();
+  if(e.key==="ArrowUp") jump();
 });
 
-update();
 loop();
 </script>
 
 </body>
 </html>
+
+
 
 
 
